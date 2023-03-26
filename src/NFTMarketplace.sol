@@ -1,5 +1,5 @@
  // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.17;
 
 // Import ERC20 interfaces for supported tokens
 import "lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
@@ -28,7 +28,6 @@ contract NFTMarketplace is RateLookup {
 
     constructor() {
         marketOwner = msg.sender;
-
     }
 
     // Events for when an NFT is put up for sale and when it is sold
@@ -70,6 +69,38 @@ contract NFTMarketplace is RateLookup {
         emit NFTSold(_id, msg.sender, nft.price);
     }
 
+
+    // Function to buy an NFT with a supported token
+    function buyNFTWithToken(uint256 _id, address _tokenAddress, string calldata _fromToken, uint8 _decimals, uint256 _amount) external {
+        NFT memory nft = nftsForSale[_id];
+        require(nft.sold == false, "NFT already sold");
+
+        // Mark NFT as sold
+        nftsForSale[_id].sold = true;
+
+        // Get on-chain value of token in ETH
+        // Calculate required ETH amount
+        int256 myInt = int256(_amount);
+        int256 swappedAmount = getSwapTokenPrice(_fromToken, "ETH", _decimals,myInt);
+        
+        require(uint256(swappedAmount) >= nft.price, "amount lesser than TOKEN price");
+
+        // Transfer tokens from buyer to contract
+        IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _amount);
+
+        // Transfer NFT to buyer
+        IERC721(nft.contractAddress).transferFrom(address(this), msg.sender, nft.tokenId);
+
+        // Transfer ETH to seller
+        (bool success, ) = nft.seller.call{value: nft.price}("");
+        require(success, "ETH transfer failed");
+
+        // Emit event
+        emit NFTSold(_id, msg.sender, nft.price);
+    }
+    receive() external payable {}
+    
+
     // function buyNFTWithUSDT(uint256 _id, address _tokenAddress, uint256 _amount) external {
     //     NFT memory nft = nftsForSale[_id];
     //     require(nft.sold == false, "NFT already sold");
@@ -84,75 +115,6 @@ contract NFTMarketplace is RateLookup {
     //     // Transfer tokens from buyer to contract
     //     IERC20(_tokenAddress).transferFrom(msg.sender, address, ethAmount);
     // }
-
-    // Function to buy an NFT with a supported token
-    function buyNFTWithToken(uint256 _id, address _tokenAddress, uint256 _amount) external {
-        NFT memory nft = nftsForSale[_id];
-        require(nft.sold == false, "NFT already sold");
-
-        // Get on-chain value of token in ETH
-
-        // uint256 tokenPriceInETH = tokenPricesInETH[_tokenAddress];
-        uint256 tokenPriceInETH = RateLookup.getDerivedPrice()
-
-        require(tokenPriceInETH > 0, "Token not supported");
-
-        // Calculate required ETH amount
-        uint256 ethAmount = (_amount * tokenPriceInETH) / (10 ** IERC20(_tokenAddress).decimals);
-
-        // Transfer tokens from buyer to contract
-        IERC20(_tokenAddress).transferFrom(msg.sender, address, ethAmount);
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

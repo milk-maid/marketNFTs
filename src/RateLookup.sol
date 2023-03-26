@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.17;
 
-import "./AggregatorV3Interface.sol";
 import "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
-
+import "./AggregatorV3Interface.sol";
 
 /// @title Price Feed
 /// @notice This gets the exchange rate of two Tokens
@@ -11,30 +10,36 @@ import "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 contract RateLookup is Ownable {
 
     /// @dev This maps the token address to the aggregator's address
-    mapping (string => address) private aggregrator;
+    mapping (string => address) private aggregator;
     
     constructor() {
-        addAggregator("USDT", 0xEe9F2375b4bdF6387aa8265dD4FB8F16512A1d46);
-        addAggregator("AAVE", 0x6Df09E975c830ECae5bd4eD9d90f3A95a4f88012);
-        addAggregator("BNB", 0xc546d2d06144F9DD42815b8bA46Ee7B8FcAFa4a2);
-        addAggregator("BTC", 0xdeb288F737066589598e9214E782fa5A8eD689e8);
-        addAggregator("CELO", 0x9ae96129ed8FE0C707D6eeBa7b90bB1e139e543e);
-        addAggregator("DAI", 0x773616E4d11A78F511299002da57A0a94577F1f4);
-        addAggregator("FIL", 0x0606Be69451B1C9861Ac6b3626b99093b713E801);
-        addAggregator("FTM", 0x2DE7E4a9488488e0058B95854CC2f7955B35dC9b);
-        addAggregator("FTT", 0xF0985f7E2CaBFf22CecC5a71282a89582c382EFE);
-        addAggregator("SHIB", 0x8dD1CD88F43aF196ae478e91b9F5E4Ac69A97C61);
+        addAggregator("ETH", 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
+        addAggregator("EUR", 0xb49f677943BC038e9857d61E7d053CaA2C1734C1);
+        addAggregator("USDT", 0x3E7d1eAB13ad0104d2750B8863b489D65364e32D);
+        addAggregator("AAVE", 0x547a514d5e3769680Ce22B2361c10Ea13619e8a9);
+        addAggregator("BNB", 0x14e613AC84a31f709eadbdF89C6CC390fDc9540A);
+        addAggregator("BTC", 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c);
+        addAggregator("CAKE", 0xEb0adf5C06861d6c07174288ce4D0a8128164003);
+        addAggregator("DAI", 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9);
+        addAggregator("DOGE", 0x2465CefD3b488BE410b941b1d4b2767088e2A028);
+        addAggregator("DOT", 0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734);
+        addAggregator("KNC", 0xf8fF43E991A81e6eC886a3D281A2C6cC19aE70Fc);
+        addAggregator("NEAR", 0xC12A6d1D827e23318266Ef16Ba6F397F2F91dA9b);
+        addAggregator("SUSHI", 0xCc70F09A6CC17553b2E31954cD36E4A2d89501f7);
+        addAggregator("SOL", 0x4ffC43a60e009B551865A93d232E33Fce9f01507);
+        addAggregator("FTT", 0x84e3946C6df27b453315a1B38e4dECEF23d9F16F);
+        addAggregator("UNI", 0x553303d460EE0afB37EdFf9bE42922D8FF63220e);
     }
 
     function addAggregator(string memory _tokenName, address _aggregatorAddress) public onlyOwner() {
-        require(aggregrator[_tokenName] == address(0),"Aggregator Address already exist!");
-        aggregrator[_tokenName] = _aggregatorAddress;
+        require(aggregator[_tokenName] == address(0),"Aggregator Address already exist!");
+        aggregator[_tokenName] = _aggregatorAddress;
     }
 
 
     function deleteAggregator(string calldata _tokenName) external onlyOwner() {
-        require(aggregrator[_tokenName] != address(0),"Aggregator Address does not exist");
-        aggregrator[_tokenName] = address(0);
+        require(aggregator[_tokenName] != address(0),"Aggregator Address does not exist");
+        aggregator[_tokenName] = address(0);
     }
 
     /// This gets the exchange rate of two tokens
@@ -42,8 +47,8 @@ contract RateLookup is Ownable {
     // / @param _to This is the token you are swapping to    
     /// @param _decimals This is the decimal of the token you are swapping to
     function getDerivedPrice(
-        string calldata _from,
-        string calldata _to,
+        string memory _from,
+        string memory _to,
         uint8 _decimals
     ) public view returns (int256) {
         require(
@@ -52,17 +57,17 @@ contract RateLookup is Ownable {
         );
         int256 decimals = int256(10 ** uint256(_decimals));
 
-        (, int256 fromPrice, , , ) = AggregatorV3Interface(aggregrator[_from])
+        (, int256 fromPrice, , , ) = AggregatorV3Interface(aggregator[_from])
             .latestRoundData();
 
-        uint8 fromDecimals = AggregatorV3Interface(aggregrator[_from]).decimals();
+        uint8 fromDecimals = AggregatorV3Interface(aggregator[_from]).decimals();
 
         fromPrice = scalePrice(fromPrice, fromDecimals, _decimals);
 
-        (, int256 toPrice, , , ) = AggregatorV3Interface(aggregrator[_to])
+        (, int256 toPrice, , , ) = AggregatorV3Interface(aggregator[_to])
             .latestRoundData();
             
-        uint8 toDecimals = AggregatorV3Interface(aggregrator[_to]).decimals();
+        uint8 toDecimals = AggregatorV3Interface(aggregator[_to]).decimals();
 
         toPrice = scalePrice(toPrice, toDecimals, _decimals);
 
@@ -83,11 +88,14 @@ contract RateLookup is Ownable {
     }
 
     function getSwapTokenPrice(
-        string calldata _fromToken, 
-        string calldata _toToken,
+        string memory _fromToken, 
+        string memory _toToken,
         uint8 _decimals,
         int256 _amount
-    ) external view returns (int256) {
+    ) internal view returns (int256) {
+
+        require(aggregator[_fromToken] != address(0), "WE DON'T SUPPORT THIS TOKEN YET!");
+        require(aggregator[_toToken] != address(0), "WE DON'T SUPPORT THIS TOKEN YET!");
         return _amount * getDerivedPrice(
             _fromToken,
              _toToken,
